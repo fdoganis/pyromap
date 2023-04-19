@@ -1,5 +1,9 @@
 import * as THREE from 'three';
 import { ARButton } from 'three/addons/webxr/ARButton.js';
+import {
+  OrbitControls
+} from 'three/addons/controls/OrbitControls.js';
+
 
 import {
   GLTFLoader
@@ -17,6 +21,7 @@ let camera, scene, renderer;
 let controller;
 
 let reticle;
+let cone = null;
 
 let hitTestSource = null;
 let hitTestSourceRequested = false;
@@ -59,21 +64,65 @@ function init() {
 
   const geometry = new THREE.CylinderGeometry(0.1, 0.1, 0.2, 32).translate(0, 0.1, 0);
 
+  let num = 0;
+
+  controller = renderer.xr.getController(0);
+  controller.addEventListener('select', onSelect); // change?
+
+
+  controller.userData.skipFrames = 0;
+
+  scene.add(controller);
+
   function onSelect() {
 
     if (reticle.visible) {
+      if (num < 5) { //pyromane
 
-      reticle.matrix.decompose(model.position, model.quaternion, model.scale);
-      model.scale.y = Math.random() * 2 + 1;
-      scene.add(model);
+        // const material = new THREE.MeshPhongMaterial({ color: 0xffffff * Math.random() });
+        // const mesh = new THREE.Mesh(geometry, material);
+        // reticle.matrix.decompose(mesh.position, mesh.quaternion, mesh.scale);
+        // mesh.scale.y = Math.random() * 2 + 1;
+        // scene.add(mesh);
 
+        reticle.matrix.decompose(model.position, model.quaternion, model.scale);
+        model.scale.y = Math.random() * 2 + 1;
+        scene.add(model);
+        num++;
+
+      } else { //mode pompier
+        controller.removeEventListener('select', onSelect);
+        controller.addEventListener('selectstart', onSelectStart);
+        controller.addEventListener('selectend', onSelectEnd);
+
+
+        const geometry = new THREE.ConeGeometry(0.0456, 0.33536, 24).rotateX(Math.PI / 2);
+        //const material = new THREE.MeshBasicMaterial({ color: 0xffffff });
+        const material = new THREE.MeshNormalMaterial();
+        cone = new THREE.Mesh(geometry, material);
+        scene.add(cone);
+
+        // https://github.com/mrdoob/three.js/blob/master/examples/webxr_ar_paint.html => Exemple code pour Extin 
+      }
     }
 
   }
 
-  controller = renderer.xr.getController(0);
-  controller.addEventListener('select', onSelect);
-  scene.add(controller);
+  function onSelectStart() {
+
+
+    cone.visible = true;
+    this.userData.isSelecting = true;
+    this.userData.skipFrames = 2;
+  }
+
+  function onSelectEnd() {
+
+    cone.visible = false;
+    this.userData.isSelecting = false;
+  }
+
+
 
   reticle = new THREE.Mesh(
     new THREE.RingGeometry(0.15, 0.2, 32).rotateX(- Math.PI / 2),
@@ -98,11 +147,46 @@ function onWindowResize() {
 
 }
 
+
+//
+
+function handleController(controller) {
+  if (cone === null) {
+    return;
+  }
+
+  cone.position.set(0, 0, - 0.2).applyMatrix4(controller.matrixWorld);
+  cone.quaternion.setFromRotationMatrix(controller.matrixWorld);
+
+  const userData = controller.userData;
+  if (userData.isSelecting === true) {
+
+    if (userData.skipFrames >= 0) {
+
+      // TODO(mrdoob) Revisit this
+
+      userData.skipFrames--;
+      cone.visible = true;
+    } else {
+      cone.visible = false;
+
+    }
+
+  }
+
+
+
+}
+
+
 function animate() {
 
   renderer.setAnimationLoop(render);
-
   const delta = clock.getDelta();
+  if (delta >= 0.1) {
+    cone.visible = !cone.visible;
+  }
+
 
   if (mixer) mixer.update(delta);
 
@@ -131,6 +215,7 @@ function gltfReader(gltf) {
 
 
 function render(timestamp, frame) {
+  handleController(controller);
 
   if (frame) {
 
