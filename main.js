@@ -1,6 +1,17 @@
 import * as THREE from 'three';
 import { ARButton } from 'three/addons/webxr/ARButton.js';
 
+import {
+  GLTFLoader
+} from 'three/addons/loaders/GLTFLoader.js';
+
+import { DRACOLoader } from 'three/addons/loaders/DRACOLoader.js';
+
+import { RoomEnvironment } from 'three/addons/environments/RoomEnvironment.js';
+
+let mixer = null;
+let model = null;
+
 let container;
 let camera, scene, renderer;
 let controller;
@@ -10,7 +21,13 @@ let reticle;
 let hitTestSource = null;
 let hitTestSourceRequested = false;
 
+const dracoLoader = new DRACOLoader();
+dracoLoader.setDecoderPath('jsm/libs/draco/gltf/');
+
+const clock = new THREE.Clock();
+
 init();
+loadData();
 animate();
 
 function init() {
@@ -46,11 +63,9 @@ function init() {
 
     if (reticle.visible) {
 
-      const material = new THREE.MeshPhongMaterial({ color: 0xffffff * Math.random() });
-      const mesh = new THREE.Mesh(geometry, material);
-      reticle.matrix.decompose(mesh.position, mesh.quaternion, mesh.scale);
-      mesh.scale.y = Math.random() * 2 + 1;
-      scene.add(mesh);
+      reticle.matrix.decompose(model.position, model.quaternion, model.scale);
+      model.scale.y = Math.random() * 2 + 1;
+      scene.add(model);
 
     }
 
@@ -83,13 +98,37 @@ function onWindowResize() {
 
 }
 
-//
-
 function animate() {
 
   renderer.setAnimationLoop(render);
 
+  const delta = clock.getDelta();
+
+  if (mixer) mixer.update(delta);
+
 }
+
+
+function loadData() {
+  new GLTFLoader()
+    .setDRACOLoader(dracoLoader)
+    .setPath('assets/models/')
+    .load('fire_animation.glb', gltfReader);
+}
+
+
+function gltfReader(gltf) {
+
+  model = gltf.scene;
+  model.position.set(1, 1, 0);
+  model.scale.set(0.01, 0.01, 0.01);
+
+  mixer = new THREE.AnimationMixer(model);
+  mixer.clipAction(gltf.animations[0]).play();
+
+  animate();
+}
+
 
 function render(timestamp, frame) {
 
@@ -142,6 +181,7 @@ function render(timestamp, frame) {
 
   }
 
+  renderer.setAnimationLoop(animate);
   renderer.render(scene, camera);
 
 }
