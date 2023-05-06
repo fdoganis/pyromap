@@ -181,8 +181,6 @@ function handleController(controller) {
 
 function animate() {
 
-  renderer.setAnimationLoop(render);
-
   const delta = clock.getDelta();
   if (delta >= 0.1) {
     if(cone != null) {
@@ -218,6 +216,7 @@ function gltfReader(gltf) {
 
 
 function render(timestamp, frame) {
+
   handleController(controller);
 
   if (frame) {
@@ -269,7 +268,10 @@ function render(timestamp, frame) {
 
   }
 
-  renderer.setAnimationLoop(animate);
+  animate();
+
   renderer.render(scene, camera);
 
 }
+
+renderer.setAnimationLoop(render);
