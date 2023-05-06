@@ -70,7 +70,7 @@ function init() {
   controller.addEventListener('select', onSelect); // change?
 
 
-  controller.userData.skipFrames = 0;
+  //controller.userData.skipFrames = 0;
 
   scene.add(controller);
 
@@ -113,7 +113,7 @@ function init() {
 
     cone.visible = true;
     this.userData.isSelecting = true;
-    this.userData.skipFrames = 2;
+    //this.userData.skipFrames = 2;
   }
 
   function onSelectEnd() {
@@ -160,20 +160,10 @@ function handleController(controller) {
 
   const userData = controller.userData;
   if (userData.isSelecting === true) {
-
-    if (userData.skipFrames >= 0) {
-
-      // TODO(mrdoob) Revisit this
-
-      userData.skipFrames--;
-      cone.visible = true;
+      cone.visible = !cone.visible;
     } else {
       cone.visible = false;
-
-    }
-
   }
-
 
 
 }
@@ -182,13 +172,7 @@ function handleController(controller) {
 function animate() {
 
   const delta = clock.getDelta();
-  if (delta >= 0.1) {
-    if(cone != null) {
-      cone.visible = !cone.visible;
-    }
-  }
-
-
+  
   if (mixer) mixer.update(delta);
 
 }
