@@ -180,13 +180,14 @@ function handleController(controller) {
 
 
 function animate() {
-  if (cone === null) {
-    return;
-  }
+
   renderer.setAnimationLoop(render);
+
   const delta = clock.getDelta();
   if (delta >= 0.1) {
-    cone.visible = !cone.visible;
+    if(cone != null) {
+      cone.visible = !cone.visible;
+    }
   }
 
 
