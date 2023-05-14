@@ -135,6 +135,7 @@ function init() {
         root.translateX(model.posX * model.scale);
         root.translateY(model.posY * model.scale);
         root.translateZ(model.posZ * model.scale);
+        root.rotateY(-Math.PI / 2);
         root.scale.set(model.scale, model.scale, model.scale);
 
         extinguisherMesh.add(root);
