@@ -127,13 +127,17 @@ function init() {
 
         role = Role.Fireman;
 
+        const root = new THREE.Object3D();
         const model = models.extinguisher;
         extinguisherMesh.name = model.name;
-        extinguisherMesh.add(model.gltf.scene);
-        extinguisherMesh.translateX(model.posX * model.scale);
-        extinguisherMesh.translateY(model.posY * model.scale);
-        extinguisherMesh.translateZ(model.posZ * model.scale);
-        extinguisherMesh.scale.set(model.scale, model.scale, model.scale);
+        root.add(model.gltf.scene);
+
+        root.translateX(model.posX * model.scale);
+        root.translateY(model.posY * model.scale);
+        root.translateZ(model.posZ * model.scale);
+        root.scale.set(model.scale, model.scale, model.scale);
+
+        extinguisherMesh.add(root);
         scene.add(extinguisherMesh);
 
         controller.removeEventListener('select', onSelect);
