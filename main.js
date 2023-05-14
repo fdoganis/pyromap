@@ -26,6 +26,13 @@ let cone = null;
 let hitTestSource = null;
 let hitTestSourceRequested = false;
 
+const Role = Object.freeze({
+  Pyromaniac: 'pyromaniac',
+  Fireman: 'fireman'
+})
+
+let role = Role.Pyromaniac;
+
 const dracoLoader = new DRACOLoader();
 dracoLoader.setDecoderPath('jsm/libs/draco/gltf/');
 
@@ -65,6 +72,7 @@ function init() {
   const geometry = new THREE.CylinderGeometry(0.1, 0.1, 0.2, 32).translate(0, 0.1, 0);
 
   let num = 0;
+  const MAX_FIRES = 1;
 
   controller = renderer.xr.getController(0);
   controller.addEventListener('select', onSelect); // change?
@@ -77,7 +85,7 @@ function init() {
   function onSelect() {
 
     if (reticle.visible) {
-      if (num < 5) { //pyromane
+      if (num < MAX_FIRES) { //pyromane
 
         // const material = new THREE.MeshPhongMaterial({ color: 0xffffff * Math.random() });
         // const mesh = new THREE.Mesh(geometry, material);
@@ -91,6 +99,8 @@ function init() {
         num++;
 
       } else { //mode pompier
+
+        role = Role.Fireman;
         controller.removeEventListener('select', onSelect);
         controller.addEventListener('selectstart', onSelectStart);
         controller.addEventListener('selectend', onSelectEnd);
@@ -128,6 +138,7 @@ function init() {
     new THREE.RingGeometry(0.15, 0.2, 32).rotateX(- Math.PI / 2),
     new THREE.MeshBasicMaterial()
   );
+
   reticle.matrixAutoUpdate = false;
   reticle.visible = false;
   scene.add(reticle);
