@@ -26,6 +26,7 @@ let controller;
 
 let reticle;
 let cone = null;
+let extinguisherMesh = new THREE.Object3D();
 
 let hitTestSource = null;
 let hitTestSourceRequested = false;
@@ -40,8 +41,9 @@ let role = Role.Pyromaniac;
 const dracoLoader = new DRACOLoader();
 dracoLoader.setDecoderPath('jsm/libs/draco/gltf/');
 
-const modelsToLoad = {
+const models = {
   fire: { name: 'fire', url: 'fire_animation.glb', posX: 0.0, posY: 2.83, posZ: 0.0, scale: 0.5 },
+  extinguisher: { name: 'extinguisher', url: 'extin.glb', posX: 0.0, posY: 0.0, posZ: 0.0, scale: 0.002 },
 };
 
 
@@ -117,13 +119,22 @@ function init() {
 
         tmpMatrix = reticle.matrix;
 
-        cloneModel(modelsToLoad.fire, tmpMatrix);
+        cloneModel(models.fire, tmpMatrix);
 
         num++;
 
       } else {
 
         role = Role.Fireman;
+
+        const model = models.extinguisher;
+        extinguisherMesh.name = model.name;
+        extinguisherMesh.add(model.gltf.scene);
+        extinguisherMesh.translateX(model.posX * model.scale);
+        extinguisherMesh.translateY(model.posY * model.scale);
+        extinguisherMesh.translateZ(model.posZ * model.scale);
+        extinguisherMesh.scale.set(model.scale, model.scale, model.scale);
+        scene.add(extinguisherMesh);
 
         controller.removeEventListener('select', onSelect);
 
@@ -191,6 +202,9 @@ function handleController(controller) {
     cone.visible = false;
   }
 
+  extinguisherMesh.position.set(0, 0, - 0.3).applyMatrix4(controller.matrixWorld);
+  extinguisherMesh.quaternion.setFromRotationMatrix(controller.matrixWorld);
+
 
 }
 
@@ -215,7 +229,7 @@ function loadData() {
     .setDRACOLoader(dracoLoader)
     .setPath('assets/models/');
 
-  for (const model of Object.values(modelsToLoad)) {
+  for (const model of Object.values(models)) {
     gltfLoader.load(model.url, (gltf) => {
       model.gltf = gltf;
     });
@@ -234,7 +248,7 @@ function allModelsLoaded() {
 }
 
 function prepModelsAndAnimations() {
-  Object.values(modelsToLoad).forEach(model => {
+  Object.values(models).forEach(model => {
     const animsByName = {};
     model.gltf.animations.forEach((clip) => {
       animsByName[clip.name] = clip;
