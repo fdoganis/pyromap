@@ -253,9 +253,9 @@ function cloneModel(model, matrix) {
 
   if (matrix) {
     matrix.decompose(root.position, root.quaternion, root.scale);
-    root.translateX(model.posX);
-    root.translateY(model.posY);
-    root.translateZ(model.posZ);
+    root.translateX(model.posX * model.scale);
+    root.translateY(model.posY * model.scale);
+    root.translateZ(model.posZ * model.scale);
     root.scale.set(model.scale, model.scale, model.scale);
   }
 
