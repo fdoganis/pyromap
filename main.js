@@ -91,13 +91,15 @@ function init() {
 
 
   //controller.userData.skipFrames = 0;
+  controller.userData.nbFrames = 0;
+
 
   scene.add(controller);
 
   // create cone
   const geometry = new THREE.ConeGeometry(1.0, 1.0, 24).rotateX(Math.PI / 2);
-  //const material = new THREE.MeshBasicMaterial({ color: 0xffffff });
-  const material = new THREE.MeshNormalMaterial();
+  const material = new THREE.MeshBasicMaterial({ color: 0xffffff });
+  //const material = new THREE.MeshNormalMaterial(); // debug
   cone = new THREE.Mesh(geometry, material);
   scene.add(cone);
 
@@ -158,7 +160,8 @@ function init() {
 
     cone.visible = true;
     this.userData.isSelecting = true;
-    //this.userData.skipFrames = 2;
+
+
   }
 
   function onSelectEnd() {
@@ -210,6 +213,18 @@ function handleController(controller) {
   extinguisherMesh.position.set(0, 0, - 0.3).applyMatrix4(controller.matrixWorld);
   extinguisherMesh.quaternion.setFromRotationMatrix(controller.matrixWorld);
 
+  userData.nbFrames++;
+
+
+  if (userData.nbFrames > 180) {
+    userData.nbFrames = 0;
+
+    let fire = scene.getObjectByName("fire"); // TODO: improve this: get the closest fire instead of first in list
+    if (fire) {
+      scene.remove(fire);
+    }
+
+  }
 
 }
 
