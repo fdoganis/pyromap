@@ -71,6 +71,7 @@ function init() {
 
 
   //controller.userData.skipFrames = 0;
+  //controller.userData.skipFrames = 0;
 
   scene.add(controller);
 
@@ -172,12 +173,6 @@ function handleController(controller) {
 function animate() {
 
   const delta = clock.getDelta();
-  if (delta >= 0.1) {
-    if (cone != null) {
-      cone.visible = !cone.visible;
-    }
-  }
-
 
   if (mixer) mixer.update(delta);
 
