@@ -16,7 +16,7 @@ import { RoomEnvironment } from 'three/addons/environments/RoomEnvironment.js';
 import * as SkeletonUtils from 'three/addons/utils/SkeletonUtils.js';
 
 let mixer = null;
-let model = null;
+let fire_gltf = null;
 
 let container;
 let camera, scene, renderer;
@@ -38,11 +38,20 @@ let role = Role.Pyromaniac;
 const dracoLoader = new DRACOLoader();
 dracoLoader.setDecoderPath('jsm/libs/draco/gltf/');
 
+const modelsToLoad = {
+  fire: { name: 'fire', url: 'fire_animation.glb', scale: 0.1 },
+};
+
+
+
 const clock = new THREE.Clock();
+
+const mixers = [];
+
+let initOK = false;
 
 init();
 loadData();
-animate();
 
 function init() {
 
@@ -74,7 +83,7 @@ function init() {
   const geometry = new THREE.CylinderGeometry(0.1, 0.1, 0.2, 32).translate(0, 0.1, 0);
 
   let num = 0;
-  const MAX_FIRES = 1;
+  const MAX_FIRES = 5;
 
   controller = renderer.xr.getController(0);
   controller.addEventListener('select', onSelect); // change?
@@ -84,7 +93,11 @@ function init() {
 
   scene.add(controller);
 
+  let tmpMatrix = new THREE.Matrix4();
+
   function onSelect() {
+
+    if (!initOK) { return; };
 
     if (reticle.visible) {
       if (num < MAX_FIRES) { //pyromane
@@ -95,13 +108,12 @@ function init() {
         // mesh.scale.y = Math.random() * 2 + 1;
         // scene.add(mesh);
 
-        const clonedScene = SkeletonUtils.clone(model); // clone gltf.scene
-        const root = new THREE.Object3D();
-        root.add(clonedScene);
-        scene.add(root);
+        // see https://threejs.org/manual/#en/game
 
-        reticle.matrix.decompose(root.position, root.quaternion, root.scale);
-        root.scale.y = Math.random() * 2 + 1;
+        tmpMatrix = reticle.matrix;
+
+        cloneModel(modelsToLoad.fire, tmpMatrix);
+
         num++;
 
       } else { //mode pompier
@@ -110,7 +122,6 @@ function init() {
         controller.removeEventListener('select', onSelect);
         controller.addEventListener('selectstart', onSelectStart);
         controller.addEventListener('selectend', onSelectEnd);
-
 
         const geometry = new THREE.ConeGeometry(0.0456, 0.33536, 24).rotateX(Math.PI / 2);
         //const material = new THREE.MeshBasicMaterial({ color: 0xffffff });
@@ -137,7 +148,6 @@ function init() {
     cone.visible = false;
     this.userData.isSelecting = false;
   }
-
 
 
   reticle = new THREE.Mesh(
@@ -190,29 +200,75 @@ function animate() {
 
   const delta = clock.getDelta();
 
-  if (mixer) mixer.update(delta);
+  for (const mixer of mixers) {
+    mixer.update(delta);
+  }
 
 }
 
 
 function loadData() {
-  new GLTFLoader()
+
+  const manager = new THREE.LoadingManager();
+  manager.onLoad = allModelsLoaded;
+
+  const gltfLoader = new GLTFLoader(manager)
     .setDRACOLoader(dracoLoader)
-    .setPath('assets/models/')
-    .load('fire_animation.glb', gltfReader);
+    .setPath('assets/models/');
+
+  for (const model of Object.values(modelsToLoad)) {
+    gltfLoader.load(model.url, (gltf) => {
+      model.gltf = gltf;
+    });
+  }
+
+
 }
 
+function allModelsLoaded() {
 
-function gltfReader(gltf) {
+  prepModelsAndAnimations();
 
-  model = gltf.scene;
-  model.position.set(1, 1, 0);
-  model.scale.set(0.01, 0.01, 0.01);
+  //cloneModels();
 
-  mixer = new THREE.AnimationMixer(model);
-  mixer.clipAction(gltf.animations[0]).play();
+  initOK = true;
+}
 
-  animate();
+function prepModelsAndAnimations() {
+  Object.values(modelsToLoad).forEach(model => {
+    const animsByName = {};
+    model.gltf.animations.forEach((clip) => {
+      animsByName[clip.name] = clip;
+    });
+    model.animations = animsByName;
+  });
+}
+
+function cloneModels() {
+  Object.values(modelsToLoad).forEach((model, ndx) => {
+    cloneModel(model);
+    //root.position.x = (ndx - 3) * 3;
+  });
+}
+
+function cloneModel(model, matrix) {
+  const clonedScene = SkeletonUtils.clone(model.gltf.scene);
+  const root = new THREE.Object3D();
+  root.name = model.name;
+  root.add(clonedScene);
+  scene.add(root);
+
+  if (matrix) {
+    matrix.decompose(root.position, root.quaternion, root.scale);
+    root.scale.set(model.scale, model.scale, model.scale);
+  }
+
+  // make sure prepModelsAndAnimations() has been called before calling this code
+  const mixer = new THREE.AnimationMixer(clonedScene);
+  const firstClip = Object.values(model.animations)[0];
+  const action = mixer.clipAction(firstClip);
+  action.play();
+  mixers.push(mixer);
 }
 
 
