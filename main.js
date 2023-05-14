@@ -41,7 +41,7 @@ const dracoLoader = new DRACOLoader();
 dracoLoader.setDecoderPath('jsm/libs/draco/gltf/');
 
 const modelsToLoad = {
-  fire: { name: 'fire', url: 'fire_animation.glb', scale: 0.1 },
+  fire: { name: 'fire', url: 'fire_animation.glb', posX: 0.0, posY: 2.83, posZ: 0.0, scale: 1.0 },
 };
 
 
@@ -253,6 +253,9 @@ function cloneModel(model, matrix) {
 
   if (matrix) {
     matrix.decompose(root.position, root.quaternion, root.scale);
+    root.translateX(model.posX);
+    root.translateY(model.posY);
+    root.translateZ(model.posZ);
     root.scale.set(model.scale, model.scale, model.scale);
   }
 
