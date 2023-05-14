@@ -171,8 +171,6 @@ function handleController(controller) {
 
 function animate() {
 
-  renderer.setAnimationLoop(render);
-
   const delta = clock.getDelta();
   if (delta >= 0.1) {
     if (cone != null) {
