@@ -71,7 +71,6 @@ function init() {
 
 
   //controller.userData.skipFrames = 0;
-  //controller.userData.skipFrames = 0;
 
   scene.add(controller);
 
