@@ -13,6 +13,8 @@ import { DRACOLoader } from 'three/addons/loaders/DRACOLoader.js';
 
 import { RoomEnvironment } from 'three/addons/environments/RoomEnvironment.js';
 
+import * as SkeletonUtils from 'three/addons/utils/SkeletonUtils.js';
+
 let mixer = null;
 let model = null;
 
@@ -93,9 +95,13 @@ function init() {
         // mesh.scale.y = Math.random() * 2 + 1;
         // scene.add(mesh);
 
-        reticle.matrix.decompose(model.position, model.quaternion, model.scale);
-        model.scale.y = Math.random() * 2 + 1;
-        scene.add(model);
+        const clonedScene = SkeletonUtils.clone(model); // clone gltf.scene
+        const root = new THREE.Object3D();
+        root.add(clonedScene);
+        scene.add(root);
+
+        reticle.matrix.decompose(root.position, root.quaternion, root.scale);
+        root.scale.y = Math.random() * 2 + 1;
         num++;
 
       } else { //mode pompier
