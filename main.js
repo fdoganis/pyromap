@@ -43,7 +43,7 @@ dracoLoader.setDecoderPath('jsm/libs/draco/gltf/');
 
 const models = {
   fire: { name: 'fire', url: 'fire_animation.glb', posX: 0.0, posY: 2.83, posZ: 0.0, scale: 0.5 },
-  extinguisher: { name: 'extinguisher', url: 'extin.glb', posX: 0.0, posY: 0.0, posZ: 0.0, scale: 0.002 },
+  extinguisher: { name: 'extinguisher', url: 'extin.glb', posX: 0.0, posY: -0.33, posZ: 0.0, scale: 0.0015 },
 };
 
 
