@@ -1,3 +1,5 @@
+"use strict";
+
 import * as THREE from 'three';
 import { ARButton } from 'three/addons/webxr/ARButton.js';
 import {
@@ -51,7 +53,6 @@ const mixers = [];
 let initOK = false;
 
 init();
-loadData();
 
 function init() {
 
@@ -80,8 +81,6 @@ function init() {
 
   //
 
-  const geometry = new THREE.CylinderGeometry(0.1, 0.1, 0.2, 32).translate(0, 0.1, 0);
-
   let num = 0;
   const MAX_FIRES = 5;
 
@@ -93,6 +92,16 @@ function init() {
 
   scene.add(controller);
 
+  // create cone
+  const geometry = new THREE.ConeGeometry(1.0, 1.0, 24).rotateX(Math.PI / 2);
+  //const material = new THREE.MeshBasicMaterial({ color: 0xffffff });
+  const material = new THREE.MeshNormalMaterial();
+  cone = new THREE.Mesh(geometry, material);
+  scene.add(cone);
+
+  // load models
+  loadData();
+
   let tmpMatrix = new THREE.Matrix4();
 
   function onSelect() {
@@ -100,13 +109,9 @@ function init() {
     if (!initOK) { return; };
 
     if (reticle.visible) {
-      if (num < MAX_FIRES) { //pyromane
+      if (num < MAX_FIRES) {
 
-        // const material = new THREE.MeshPhongMaterial({ color: 0xffffff * Math.random() });
-        // const mesh = new THREE.Mesh(geometry, material);
-        // reticle.matrix.decompose(mesh.position, mesh.quaternion, mesh.scale);
-        // mesh.scale.y = Math.random() * 2 + 1;
-        // scene.add(mesh);
+        // Pyromaniac can light up to MAX_FIRES fires
 
         // see https://threejs.org/manual/#en/game
 
@@ -116,18 +121,15 @@ function init() {
 
         num++;
 
-      } else { //mode pompier
+      } else {
 
         role = Role.Fireman;
+
         controller.removeEventListener('select', onSelect);
+
         controller.addEventListener('selectstart', onSelectStart);
         controller.addEventListener('selectend', onSelectEnd);
 
-        const geometry = new THREE.ConeGeometry(0.0456, 0.33536, 24).rotateX(Math.PI / 2);
-        //const material = new THREE.MeshBasicMaterial({ color: 0xffffff });
-        const material = new THREE.MeshNormalMaterial();
-        cone = new THREE.Mesh(geometry, material);
-        scene.add(cone);
 
         // https://github.com/mrdoob/three.js/blob/master/examples/webxr_ar_paint.html => Exemple code pour Extin 
       }
@@ -181,9 +183,6 @@ function handleController(controller) {
   if (cone === null) {
     return;
   }
-
-  cone.position.set(0, 0, - 0.2).applyMatrix4(controller.matrixWorld);
-  cone.quaternion.setFromRotationMatrix(controller.matrixWorld);
 
   const userData = controller.userData;
   if (userData.isSelecting === true) {
@@ -244,12 +243,6 @@ function prepModelsAndAnimations() {
   });
 }
 
-function cloneModels() {
-  Object.values(modelsToLoad).forEach((model, ndx) => {
-    cloneModel(model);
-    //root.position.x = (ndx - 3) * 3;
-  });
-}
 
 function cloneModel(model, matrix) {
   const clonedScene = SkeletonUtils.clone(model.gltf.scene);
@@ -271,6 +264,10 @@ function cloneModel(model, matrix) {
   mixers.push(mixer);
 }
 
+
+let tmpPos = new THREE.Vector3();
+let tmpRot = new THREE.Quaternion();
+let tmpScale = new THREE.Vector3();
 
 function render(timestamp, frame) {
 
@@ -318,6 +315,19 @@ function render(timestamp, frame) {
       } else {
 
         reticle.visible = false;
+
+      }
+
+      if (role === Role.Fireman) {
+
+        reticle.visible = false;
+
+        reticle.matrix.decompose(tmpPos, tmpRot, tmpScale);
+        cone.position.copy(tmpPos);
+        tmpPos.setFromMatrixPosition(controller.matrixWorld);
+        cone.lookAt(tmpPos);
+        let scale = cone.position.distanceTo(tmpPos);
+        cone.scale.set(tmpScale.x, tmpScale.y, scale);
 
       }
 
