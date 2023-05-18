@@ -96,7 +96,6 @@ function init() {
 
   let numFires = 0;
   const MAX_FIRES = 5;
-  const MAX_LIFESPAN = 100;
 
   controller = renderer.xr.getController(0);
   controller.addEventListener('select', onSelect); // change?
@@ -131,7 +130,7 @@ function init() {
         tmpMatrix = reticle.matrix;
 
         const clone = cloneModel(models.fire, tmpMatrix);
-        clone.userData.lifespan = MAX_LIFESPAN;
+        clone.userData.lifespan = 100;
 
         numFires++;
 
@@ -207,6 +206,7 @@ function onWindowResize() {
 
 //
 
+const oldPos = new THREE.Vector3();
 function handleController(controller) {
 
   if (role != Role.Fireman) { return; }
@@ -220,8 +220,47 @@ function handleController(controller) {
     const fire = findClosestFire(currentReticlePosition);
     if (fire) {
       const life = --fire.userData.lifespan;
-      const fireScale = FIRE_MODEL_SCALE * life / MAX_LIFESPAN;
-      fire.scale.set(fireScale, fireScale, fireScale);
+      const fireScale = FIRE_MODEL_SCALE * 0.01 * life;
+      oldPos.copy(fire.position.clone());
+      console.log('oldPos');
+      console.table(...oldPos);
+      /*
+            fire.translateX(models.fire.posX * fireScale);
+            fire.translateY(models.fire.posY * fireScale);
+            fire.translateZ(models.fire.posZ * fireScale);
+            */
+
+      const box = new THREE.Box3().setFromObject(fire);
+      const size = box.getSize(new THREE.Vector3()).length();
+      console.log('size: ', size);
+      const center = box.getCenter(new THREE.Vector3());
+
+
+      //fire.position.copy(oldPos.multiplyScalar(-1.0)); // back to 0
+      fire.scale.set(fireScale, fireScale, fireScale); // WARNING: scale changes position
+      //fire.position.copy(oldPos);
+      //fire.translateY(fireScale * size.y - 0.5 * center.y);
+
+      //fire.updateMatrixWorld();
+      //const box = new THREE.Box3().setFromObject(fire);
+      //const size = box.getSize(new THREE.Vector3()).length();
+      //console.log('size: ', size);
+
+      //const center = box.getCenter(new THREE.Vector3());
+      //console.log('center');
+      //console.table(...center);
+
+
+      //this.controls.reset();
+
+      //fire.translateX(fire.position.x - oldPos.x);
+      //fire.translateY(fire.position.y - oldPos.y);
+      //fire.translateZ(fire.position.z - oldPos.z);
+
+      //fire.children[0].geometry.center();
+      //fire.position.copy(fire.position.sub(center.multiplyScalar(0.5)));
+
+
       if (life === 0) {
         scene.remove(fire);
       }
@@ -319,7 +358,17 @@ function cloneModel(model, matrix) {
   const root = new THREE.Object3D();
   root.name = model.name;
   root.add(clonedScene);
+  // debug
+  //const box = new THREE.BoxHelper(root, 0xffff00);
   scene.add(root);
+  //scene.add(box);
+  //root.userData.bbox = box;
+
+  // TODO: CHECK https://stackoverflow.com/questions/42812861/three-js-pivot-point/42866733#42866733
+
+  // https://stackoverflow.com/questions/27022160/three-js-can-i-apply-position-rotation-and-scale-to-the-geometry
+
+  // Reframe / FitAllIn: https://stackoverflow.com/questions/11766163/smart-centering-and-scaling-after-model-import-in-three-js
 
   if (matrix) {
     matrix.decompose(root.position, root.quaternion, root.scale);
