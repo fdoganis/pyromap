@@ -50,8 +50,10 @@ let role = Role.Pyromaniac;
 const dracoLoader = new DRACOLoader();
 dracoLoader.setDecoderPath('jsm/libs/draco/gltf/');
 
+const FIRE_MODEL_SCALE = 0.5;
+
 const models = {
-  fire: { name: 'fire', url: 'fire_animation.glb', posX: 0.0, posY: 2.83, posZ: 0.0, scale: 0.5 },
+  fire: { name: 'fire', url: 'fire_animation.glb', posX: 0.0, posY: 2.83, posZ: 0.0, scale: FIRE_MODEL_SCALE },
   extinguisher: { name: 'extinguisher', url: 'extin.glb', posX: 0.0, posY: -0.33, posZ: 0.0, scale: 0.0015 },
 };
 
@@ -94,6 +96,7 @@ function init() {
 
   let numFires = 0;
   const MAX_FIRES = 5;
+  const MAX_LIFESPAN = 100;
 
   controller = renderer.xr.getController(0);
   controller.addEventListener('select', onSelect); // change?
@@ -128,7 +131,7 @@ function init() {
         tmpMatrix = reticle.matrix;
 
         const clone = cloneModel(models.fire, tmpMatrix);
-        clone.userData.lifespan = 100;
+        clone.userData.lifespan = MAX_LIFESPAN;
 
         numFires++;
 
@@ -217,7 +220,8 @@ function handleController(controller) {
     const fire = findClosestFire(currentReticlePosition);
     if (fire) {
       const life = --fire.userData.lifespan;
-      fire.scale.multiplyScalar(0.001 * life); // TODO: CHECK
+      const fireScale = FIRE_MODEL_SCALE * life / MAX_LIFESPAN;
+      fire.scale.set(fireScale, fireScale, fireScale);
       if (life === 0) {
         scene.remove(fire);
       }
