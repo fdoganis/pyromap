@@ -21,7 +21,10 @@ let mixer = null;
 let fire_gltf = null;
 
 let container;
-let camera, scene, renderer;
+let camera;
+/** @type {THREE.Scene} */
+let scene;
+let renderer;
 let controller;
 
 let reticle;
@@ -30,6 +33,12 @@ let extinguisherMesh = new THREE.Object3D();
 
 let hitTestSource = null;
 let hitTestSourceRequested = false;
+
+let currentReticlePosition = new THREE.Vector3();
+
+let tmpPos = new THREE.Vector3();
+let tmpRot = new THREE.Quaternion();
+let tmpScale = new THREE.Vector3();
 
 const Role = Object.freeze({
   Pyromaniac: 'pyromaniac',
@@ -83,15 +92,12 @@ function init() {
 
   //
 
-  let num = 0;
+  let numFires = 0;
   const MAX_FIRES = 5;
 
   controller = renderer.xr.getController(0);
   controller.addEventListener('select', onSelect); // change?
 
-
-  //controller.userData.skipFrames = 0;
-  controller.userData.nbFrames = 0;
 
 
   scene.add(controller);
@@ -113,7 +119,7 @@ function init() {
     if (!initOK) { return; };
 
     if (reticle.visible) {
-      if (num < MAX_FIRES) {
+      if (numFires < MAX_FIRES) {
 
         // Pyromaniac can light up to MAX_FIRES fires
 
@@ -121,9 +127,10 @@ function init() {
 
         tmpMatrix = reticle.matrix;
 
-        cloneModel(models.fire, tmpMatrix);
+        const clone = cloneModel(models.fire, tmpMatrix);
+        clone.userData.lifespan = 100;
 
-        num++;
+        numFires++;
 
       } else {
 
@@ -147,7 +154,6 @@ function init() {
 
         controller.addEventListener('selectstart', onSelectStart);
         controller.addEventListener('selectend', onSelectEnd);
-
 
         // https://github.com/mrdoob/three.js/blob/master/examples/webxr_ar_paint.html => Exemple code pour Extin 
       }
@@ -199,34 +205,55 @@ function onWindowResize() {
 //
 
 function handleController(controller) {
-  if (cone === null) {
-    return;
-  }
+
+  if (role != Role.Fireman) { return; }
+  if (cone === null) { return; }
 
   const userData = controller.userData;
   if (userData.isSelecting === true) {
-    cone.visible = !cone.visible;
+    cone.visible = !cone.visible; // TODO: improve animation instead of simply blinking: add particles?
+
+    /** @type {THREE.Object3D} */
+    const fire = findClosestFire(currentReticlePosition);
+    if (fire) {
+      const life = --fire.userData.lifespan;
+      fire.scale.multiplyScalar(0.001 * life); // TODO: CHECK
+      if (life === 0) {
+        scene.remove(fire);
+      }
+
+    }
+
   } else {
     cone.visible = false;
   }
 
-  extinguisherMesh.position.set(0, 0, - 0.3).applyMatrix4(controller.matrixWorld);
+  extinguisherMesh.position.set(0, 0, -0.3).applyMatrix4(controller.matrixWorld);
   extinguisherMesh.quaternion.setFromRotationMatrix(controller.matrixWorld);
 
-  userData.nbFrames++;
-
-
-  if (userData.nbFrames > 180) {
-    userData.nbFrames = 0;
-
-    let fire = scene.getObjectByName("fire"); // TODO: improve this: get the closest fire instead of first in list
-    if (fire) {
-      scene.remove(fire);
-    }
-
-  }
-
 }
+
+
+const MAX_DISTANCE = 1e6;
+
+function findClosestFire(pos) {
+
+  let minDist = MAX_DISTANCE;
+  let closestFire = null;
+  const fires = scene.getObjectsByProperty("name", "fire");
+
+  fires.forEach(fire => {
+
+    let distance = fire.position.distanceTo(pos);
+    if (distance < minDist) {
+      minDist = distance;
+      closestFire = fire;
+    }
+  })
+
+  return closestFire;
+}
+
 
 
 function animate() {
@@ -277,7 +304,12 @@ function prepModelsAndAnimations() {
   });
 }
 
-
+/**
+ * Clone model, add it to scenegraph and return it for further processing
+ * @param {*} model Model to clone, must be an object containing a GLTF model stored in model.gltf
+ * @param {*} matrix Matrix used to scale and place the model
+ * @returns {THREE.Object3D} the cloned object
+ */
 function cloneModel(model, matrix) {
   const clonedScene = SkeletonUtils.clone(model.gltf.scene);
   const root = new THREE.Object3D();
@@ -299,12 +331,11 @@ function cloneModel(model, matrix) {
   const action = mixer.clipAction(firstClip);
   action.play();
   mixers.push(mixer);
+
+  return root;
 }
 
 
-let tmpPos = new THREE.Vector3();
-let tmpRot = new THREE.Quaternion();
-let tmpScale = new THREE.Vector3();
 
 function render(timestamp, frame) {
 
@@ -359,8 +390,8 @@ function render(timestamp, frame) {
 
         reticle.visible = false;
 
-        reticle.matrix.decompose(tmpPos, tmpRot, tmpScale);
-        cone.position.copy(tmpPos);
+        reticle.matrix.decompose(currentReticlePosition, tmpRot, tmpScale);
+        cone.position.copy(currentReticlePosition);
         tmpPos.setFromMatrixPosition(controller.matrixWorld);
         cone.lookAt(tmpPos);
         let scale = cone.position.distanceTo(tmpPos);
