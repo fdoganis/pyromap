@@ -80,6 +80,8 @@ const FIRE_MODEL_SCALE = 0.5;
 const FIRE_MODEL_OFFSET = 2.83;
 const FIRE_MAX_LIFESPAN = 100.0;
 
+const EXTINGUISHER_RANGE = 0.5;
+
 const models = {
   fire: { name: 'fire', url: 'fire_animation.glb', posX: 0.0, posY: FIRE_MODEL_OFFSET, posZ: 0.0, scale: FIRE_MODEL_SCALE },
   extinguisher: { name: 'extinguisher', url: 'extin.glb', posX: 0.0, posY: -0.33, posZ: 0.0, scale: 0.0015 },
@@ -252,7 +254,7 @@ function handleController(controller) {
     cone.visible = !cone.visible; // TODO: improve animation instead of simply blinking: add particles?
 
     /** @type {THREE.Object3D} */
-    const fire = findClosestFire(currentReticlePosition);
+    const fire = findClosestFire(currentReticlePosition, EXTINGUISHER_RANGE);
     if (fire) {
       fire.userData.lifespan -= 1.0;
       const life = fire.userData.lifespan;
@@ -283,7 +285,7 @@ function handleController(controller) {
 
 const MAX_DISTANCE = 1e6;
 
-function findClosestFire(pos) {
+function findClosestFire(pos, range) {
 
   let minDist = MAX_DISTANCE;
   let closestFire = null;
@@ -292,7 +294,7 @@ function findClosestFire(pos) {
   fires.forEach(fire => {
 
     let distance = fire.position.distanceTo(pos);
-    if (distance < minDist) {
+    if ((distance < range) && (distance < minDist)) {
       minDist = distance;
       closestFire = fire;
     }
