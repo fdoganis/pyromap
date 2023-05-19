@@ -17,6 +17,32 @@ import { RoomEnvironment } from 'three/addons/environments/RoomEnvironment.js';
 
 import * as SkeletonUtils from 'three/addons/utils/SkeletonUtils.js';
 
+/**
+  * Returns the query parameters as a key/value object. 
+  * Example: If the query parameters are
+  *
+  *    abc=123&def=456&name=gman
+  *
+  * Then `getQuery()` will return an object like
+  *
+  *    {
+  *      abc: '123',
+  *      def: '456',
+  *      name: 'gman',
+  *    }
+  * 
+  * source: https://threejs.org/manual/#en/debugging-javascript 
+  */
+function getQuery() {
+  return Object.fromEntries(new URLSearchParams(window.location.search).entries());
+}
+
+const query = getQuery();
+const debug = query.debug === 'true';
+const showHelpers = query.showHelpers === 'true';
+//const showHelpers = 'true'; // TODO: FIXME
+
+
 let mixer = null;
 let fire_gltf = null;
 
@@ -51,9 +77,11 @@ const dracoLoader = new DRACOLoader();
 dracoLoader.setDecoderPath('jsm/libs/draco/gltf/');
 
 const FIRE_MODEL_SCALE = 0.5;
+const FIRE_MODEL_OFFSET = 2.83;
+const FIRE_MAX_LIFESPAN = 100.0;
 
 const models = {
-  fire: { name: 'fire', url: 'fire_animation.glb', posX: 0.0, posY: 2.83, posZ: 0.0, scale: FIRE_MODEL_SCALE },
+  fire: { name: 'fire', url: 'fire_animation.glb', posX: 0.0, posY: FIRE_MODEL_OFFSET, posZ: 0.0, scale: FIRE_MODEL_SCALE },
   extinguisher: { name: 'extinguisher', url: 'extin.glb', posX: 0.0, posY: -0.33, posZ: 0.0, scale: 0.0015 },
 };
 
@@ -73,6 +101,13 @@ function init() {
   document.body.appendChild(container);
 
   scene = new THREE.Scene();
+
+  //debug
+  if (showHelpers) {
+    const gridHelper = new THREE.GridHelper();
+    scene.add(gridHelper);
+  }
+
 
   camera = new THREE.PerspectiveCamera(70, window.innerWidth / window.innerHeight, 0.01, 20);
 
@@ -130,7 +165,7 @@ function init() {
         tmpMatrix = reticle.matrix;
 
         const clone = cloneModel(models.fire, tmpMatrix);
-        clone.userData.lifespan = 100;
+        clone.userData.lifespan = FIRE_MAX_LIFESPAN;
 
         numFires++;
 
@@ -219,46 +254,15 @@ function handleController(controller) {
     /** @type {THREE.Object3D} */
     const fire = findClosestFire(currentReticlePosition);
     if (fire) {
-      const life = --fire.userData.lifespan;
-      const fireScale = FIRE_MODEL_SCALE * 0.01 * life;
-      oldPos.copy(fire.position.clone());
-      console.log('oldPos');
-      console.table(...oldPos);
-      /*
-            fire.translateX(models.fire.posX * fireScale);
-            fire.translateY(models.fire.posY * fireScale);
-            fire.translateZ(models.fire.posZ * fireScale);
-            */
+      fire.userData.lifespan -= 1.0;
+      const life = fire.userData.lifespan;
+      const fireScale = FIRE_MODEL_SCALE * life / FIRE_MAX_LIFESPAN;
+      //oldPos.copy(fire.position.clone());
 
-      const box = new THREE.Box3().setFromObject(fire);
-      const size = box.getSize(new THREE.Vector3()).length();
-      console.log('size: ', size);
-      const center = box.getCenter(new THREE.Vector3());
-
-
-      //fire.position.copy(oldPos.multiplyScalar(-1.0)); // back to 0
-      fire.scale.set(fireScale, fireScale, fireScale); // WARNING: scale changes position
-      //fire.position.copy(oldPos);
-      //fire.translateY(fireScale * size.y - 0.5 * center.y);
-
-      //fire.updateMatrixWorld();
-      //const box = new THREE.Box3().setFromObject(fire);
-      //const size = box.getSize(new THREE.Vector3()).length();
-      //console.log('size: ', size);
-
-      //const center = box.getCenter(new THREE.Vector3());
-      //console.log('center');
-      //console.table(...center);
-
-
-      //this.controls.reset();
-
-      //fire.translateX(fire.position.x - oldPos.x);
-      //fire.translateY(fire.position.y - oldPos.y);
-      //fire.translateZ(fire.position.z - oldPos.z);
-
-      //fire.children[0].geometry.center();
-      //fire.position.copy(fire.position.sub(center.multiplyScalar(0.5)));
+      fire.position.set(fire.position.x, -FIRE_MODEL_OFFSET * FIRE_MODEL_SCALE, fire.position.z);
+      fire.children[0].scale.set(fireScale, fireScale, fireScale); // WARNING: scale changes position
+      //fire.children[0].position.set(fire.position.x, FIRE_MODEL_OFFSET * fireScale, fire.position.z);
+      fire.translateY(FIRE_MODEL_OFFSET * fireScale);
 
 
       if (life === 0) {
@@ -332,8 +336,6 @@ function allModelsLoaded() {
 
   prepModelsAndAnimations();
 
-  //cloneModels();
-
   initOK = true;
 }
 
@@ -355,13 +357,21 @@ function prepModelsAndAnimations() {
  */
 function cloneModel(model, matrix) {
   const clonedScene = SkeletonUtils.clone(model.gltf.scene);
+
   const root = new THREE.Object3D();
   root.name = model.name;
   root.add(clonedScene);
+
   // debug
-  //const box = new THREE.BoxHelper(root, 0xffff00);
+  if (showHelpers) {
+    const box = new THREE.BoxHelper(root, 0xffffff);
+    root.add(box);
+
+    const axesHelper = new THREE.AxesHelper(0.5);
+    root.add(axesHelper);
+  }
   scene.add(root);
-  //scene.add(box);
+
   //root.userData.bbox = box;
 
   // TODO: CHECK https://stackoverflow.com/questions/42812861/three-js-pivot-point/42866733#42866733
@@ -370,13 +380,30 @@ function cloneModel(model, matrix) {
 
   // Reframe / FitAllIn: https://stackoverflow.com/questions/11766163/smart-centering-and-scaling-after-model-import-in-three-js
 
+  // https://stackoverflow.com/questions/33454919/scaling-a-three-js-geometry-only-up
+
+
   if (matrix) {
-    matrix.decompose(root.position, root.quaternion, root.scale);
-    root.translateX(model.posX * model.scale);
-    root.translateY(model.posY * model.scale);
-    root.translateZ(model.posZ * model.scale);
-    root.scale.set(model.scale, model.scale, model.scale);
+    matrix.decompose(root.position, root.quaternion, tmpScale);
+    clonedScene.scale.set(model.scale, model.scale, model.scale);
+    root.translateX(model.posX * clonedScene.scale.x);
+    root.translateY(model.posY * clonedScene.scale.y);
+    root.translateZ(model.posZ * clonedScene.scale.z);
+
   }
+
+
+  // https://stackoverflow.com/questions/27022160/three-js-can-i-apply-position-rotation-and-scale-to-the-geometry
+  /*
+    object.updateMatrix();
+  
+    object.geometry.applyMatrix4(object.matrix);
+  
+    object.position.set(0, 0, 0);
+    object.rotation.set(0, 0, 0);
+    object.scale.set(1, 1, 1);
+    object.updateMatrix();
+    */
 
   // make sure prepModelsAndAnimations() has been called before calling this code
   const mixer = new THREE.AnimationMixer(clonedScene);
