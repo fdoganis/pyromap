@@ -80,7 +80,7 @@ const FIRE_MODEL_SCALE = 0.5;
 const FIRE_MODEL_OFFSET = 2.83;
 const FIRE_MAX_LIFESPAN = 100.0;
 
-const EXTINGUISHER_RANGE = 0.5;
+const EXTINGUISHER_RANGE = 2.0;
 
 const models = {
   fire: { name: 'fire', url: 'fire_animation.glb', posX: 0.0, posY: FIRE_MODEL_OFFSET, posZ: 0.0, scale: FIRE_MODEL_SCALE },
