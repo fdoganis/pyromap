@@ -146,6 +146,7 @@ function init() {
   const material = new THREE.MeshBasicMaterial({ color: 0xffffff });
   //const material = new THREE.MeshNormalMaterial(); // debug
   cone = new THREE.Mesh(geometry, material);
+  cone.visible = false;
   scene.add(cone);
 
   // load models
