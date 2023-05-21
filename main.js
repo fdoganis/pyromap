@@ -99,7 +99,7 @@ const FIRE_MAX_LIFESPAN = 200.0;
 const EXTINGUISHER_RANGE = 2.0;
 const EXTINGUISHER_MODEL_SCALE = 0.0015;
 
-const SPRAY_MODEL_SCALE = 0.03;
+const SPRAY_MODEL_SCALE = 0.026;
 
 const MAX_FIRES = debug ? 1 : 5;
 //const MAX_FIRES = 1; // debug
