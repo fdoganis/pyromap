@@ -99,7 +99,7 @@ const FIRE_MAX_LIFESPAN = 200.0;
 const EXTINGUISHER_RANGE = 2.0;
 const EXTINGUISHER_MODEL_SCALE = 0.0015;
 
-const SPRAY_MODEL_SCALE = 0.03;
+const SPRAY_MODEL_SCALE = 0.06;
 
 const MAX_FIRES = debug ? 1 : 5;
 //const MAX_FIRES = 1; // debug
@@ -627,7 +627,7 @@ function render(timestamp, frame) {
         if (explosionController) {
           //tmpPos.setFromMatrixPosition(controller.matrixWorld);
           //cone.position.copy(tmpPos);
-          cone.position.set(0.0 / SPRAY_MODEL_SCALE, 0.0 / SPRAY_MODEL_SCALE, -0.01 / SPRAY_MODEL_SCALE);
+          cone.position.set(0.0, 0.5, -0.5);
           cone.scale.set(SPRAY_MODEL_SCALE, SPRAY_MODEL_SCALE, SPRAY_MODEL_SCALE);
         }
         else {
