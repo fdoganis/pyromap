@@ -17,7 +17,9 @@ var ExplosionController = (function () {
         this.objectPool = [];
         this.spawnTime = 0;
         this.flareParticle = new FlareParticle();
+        this.flareParticle.getObject3D().visible = false; // hide particles for now
         this.root.add(this.flareParticle.getObject3D());  // now adding FlareParticle manually to the root
+
         this.spawnNewFlame();
 
         controller.attachEvent(controller.DARK_COLOR, function (value) {

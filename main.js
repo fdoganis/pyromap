@@ -17,7 +17,10 @@ import { RoomEnvironment } from 'three/addons/environments/RoomEnvironment.js';
 
 import * as SkeletonUtils from 'three/addons/utils/SkeletonUtils.js';
 
+import { Controller as simSettings } from './controller.js';
+
 import { ExplosionController as explosionController } from './animation/explosionController.js';
+
 
 
 /**
@@ -85,6 +88,9 @@ const FIRE_MAX_LIFESPAN = 100.0;
 
 const EXTINGUISHER_RANGE = 2.0;
 
+//const MAX_FIRES = 5;
+const MAX_FIRES = 1; // debug
+
 const models = {
   fire: { name: 'fire', url: 'fire_animation.glb', posX: 0.0, posY: FIRE_MODEL_OFFSET, posZ: 0.0, scale: FIRE_MODEL_SCALE },
   extinguisher: { name: 'extinguisher', url: 'extin.glb', posX: 0.0, posY: -0.33, posZ: 0.0, scale: 0.0015 },
@@ -137,7 +143,7 @@ function init() {
   //
 
   let numFires = 0;
-  const MAX_FIRES = 5;
+
 
   controller = renderer.xr.getController(0);
   controller.addEventListener('select', onSelect); // change?
@@ -150,9 +156,34 @@ function init() {
   const geometry = new THREE.ConeGeometry(1.0, 1.0, 24).rotateX(Math.PI / 2);
   const material = new THREE.MeshBasicMaterial({ color: 0xffffff });
   //const material = new THREE.MeshNormalMaterial(); // debug
-  cone = new THREE.Mesh(geometry, material);
+  //cone = new THREE.Mesh(geometry, material);
+
+  cone = new THREE.Group();
+
+  if (explosionController) {
+    cone.rotateX(-Math.PI / 2); // for spray
+    cone.position.set(0, 2.0, 2.0);
+    cone.scale.set(0.25, 0.25, 0.25);
+  }
   cone.visible = false;
   scene.add(cone);
+
+  // create spray
+
+  simSettings.init(); // settings (color etc)
+  simSettings.gui.domElement.style.display = 'none'; // hide the ui
+  simSettings.params.TimeScale = 50;
+  simSettings.params.LightColor2 = '#dedede';
+  simSettings.params.LightColor = '#ececec';
+  simSettings.params.NormalColor = '#afafaf';
+  simSettings.params.DarkColor2 = '#e9e9e9';
+  simSettings.params.GreyColor = '#d8d8d8';
+  simSettings.params.DarkColor = "#bfbfbf";
+
+
+  explosionController.init(cone);
+
+
 
   // load models
   loadData();
@@ -257,7 +288,13 @@ function handleController(controller) {
 
   const userData = controller.userData;
   if (userData.isSelecting === true) {
-    cone.visible = !cone.visible; // TODO: improve animation instead of simply blinking: add particles?
+    if (explosionController) {
+      cone.visible = true; // particles
+      //cone.lookAt(extinguisherMesh.position);
+      extinguisherMesh.add(cone);
+    } else {
+      cone.visible = !cone.visible; // TODO: improve animation instead of simply blinking: add particles?    
+    }
 
     /** @type {THREE.Object3D} */
     const fire = findClosestFire(currentReticlePosition, EXTINGUISHER_RANGE);
@@ -310,7 +347,7 @@ function findClosestFire(pos, range) {
 }
 
 
-
+let time = Date.now();
 function animate() {
 
   const delta = clock.getDelta();
@@ -318,6 +355,13 @@ function animate() {
   for (const mixer of mixers) {
     mixer.update(delta);
   }
+
+  // see renderer setUpdateFunc
+  const deltaTimeMaximum = 1000 / 65;
+  const timeDiff = (Date.now() - time);
+  explosionController.update(timeDiff > deltaTimeMaximum ? deltaTimeMaximum : timeDiff);
+  time = Date.now();
+
 
 }
 
@@ -479,11 +523,20 @@ function render(timestamp, frame) {
         reticle.visible = false;
 
         reticle.matrix.decompose(currentReticlePosition, tmpRot, tmpScale);
-        cone.position.copy(currentReticlePosition);
-        tmpPos.setFromMatrixPosition(controller.matrixWorld);
-        cone.lookAt(tmpPos);
-        let scale = cone.position.distanceTo(tmpPos);
-        cone.scale.set(tmpScale.x, tmpScale.y, scale);
+
+        if (explosionController) {
+          //tmpPos.setFromMatrixPosition(controller.matrixWorld);
+          //cone.position.copy(tmpPos);
+          cone.position.set(0.0, 1.0, -2.0);
+          cone.scale.set(0.08, 0.08, 0.08);
+        }
+        else {
+          cone.position.copy(currentReticlePosition);
+          tmpPos.setFromMatrixPosition(controller.matrixWorld);
+          cone.lookAt(tmpPos);
+          let scale = cone.position.distanceTo(tmpPos);
+          cone.scale.set(tmpScale.x, tmpScale.y, scale);
+        }
 
       }
 
