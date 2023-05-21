@@ -84,16 +84,17 @@ dracoLoader.setDecoderPath('jsm/libs/draco/gltf/');
 
 const FIRE_MODEL_SCALE = 0.5;
 const FIRE_MODEL_OFFSET = 2.83;
-const FIRE_MAX_LIFESPAN = 100.0;
+const FIRE_MAX_LIFESPAN = 200.0;
 
 const EXTINGUISHER_RANGE = 2.0;
+const EXTINGUISHER_MODEL_SCALE = 0.0015;
 
-//const MAX_FIRES = 5;
-const MAX_FIRES = 1; // debug
+const MAX_FIRES = debug ? 1 : 5;
+//const MAX_FIRES = 1; // debug
 
 const models = {
   fire: { name: 'fire', url: 'fire_animation.glb', posX: 0.0, posY: FIRE_MODEL_OFFSET, posZ: 0.0, scale: FIRE_MODEL_SCALE },
-  extinguisher: { name: 'extinguisher', url: 'extin.glb', posX: 0.0, posY: -0.33, posZ: 0.0, scale: 0.0015 },
+  extinguisher: { name: 'extinguisher', url: 'extin.glb', posX: 0.1 / EXTINGUISHER_MODEL_SCALE, posY: -0.1 / EXTINGUISHER_MODEL_SCALE, posZ: 0.0, scale: EXTINGUISHER_MODEL_SCALE },
 };
 
 
