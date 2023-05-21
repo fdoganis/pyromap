@@ -625,8 +625,8 @@ function render(timestamp, frame) {
         if (explosionController) {
           //tmpPos.setFromMatrixPosition(controller.matrixWorld);
           //cone.position.copy(tmpPos);
-          cone.position.set(0.0, 1.0, -2.0);
-          cone.scale.set(0.08, 0.08, 0.08);
+          cone.position.set(0.0, 0.5, -0.5);
+          cone.scale.set(0.03, 0.03, 0.03);
         }
         else {
           cone.position.copy(currentReticlePosition);
