@@ -21,6 +21,15 @@ import { Controller as simSettings } from './controller.js';
 
 import { ExplosionController as explosionController } from './animation/explosionController.js';
 
+// Bloom
+
+import { EffectComposer } from 'three/addons/postprocessing/EffectComposer.js';
+import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
+import { ShaderPass } from 'three/addons/postprocessing/ShaderPass.js';
+import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
+
+import passthroughVS from './shaders/passthroughVS.glsl';
+import bloomFS from './shaders/bloomFS.glsl';
 
 
 /**
@@ -47,6 +56,7 @@ const query = getQuery();
 const debug = query.debug === 'true';
 const showHelpers = query.showHelpers === 'true';
 //const showHelpers = 'true'; // TODO: FIXME
+const enableBloom = query.enableBloom === 'true'; // Bloom deactivated by default, needs fixing
 
 
 let mixer = null;
@@ -97,7 +107,36 @@ const models = {
   extinguisher: { name: 'extinguisher', url: 'extin.glb', posX: 0.1 / EXTINGUISHER_MODEL_SCALE, posY: -0.1 / EXTINGUISHER_MODEL_SCALE, posZ: 0.0, scale: EXTINGUISHER_MODEL_SCALE },
 };
 
+const ENABLE_BLOOM = enableBloom ? true : false;
 
+
+const ENTIRE_SCENE = 0, BLOOM_SCENE = 1;
+
+let renderScene;
+let bloomPass;
+let bloomComposer;
+let finalComposer;
+let bloomLayer;
+
+const params = {
+  exposure: 1,
+  bloomStrength: 5,
+  bloomThreshold: 0,
+  bloomRadius: 0,
+  scene: 'Scene with Glow'
+};
+
+
+
+if (ENABLE_BLOOM) {
+
+  THREE.ColorManagement.enabled = false; // TODO: Confirm correct color management.
+
+  bloomLayer = new THREE.Layers();
+  bloomLayer.set(BLOOM_SCENE);
+
+}
+//
 
 const clock = new THREE.Clock();
 
@@ -123,6 +162,8 @@ function init() {
 
   camera = new THREE.PerspectiveCamera(70, window.innerWidth / window.innerHeight, 0.01, 20);
 
+  // Lights
+
   const light = new THREE.HemisphereLight(0xffffff, 0xbbbbff, 1);
   light.position.set(0.5, 1, 0.25);
   scene.add(light);
@@ -132,16 +173,58 @@ function init() {
   dirLight.position.set(5, 10, 7.5);
   scene.add(dirLight);
 
+  if (ENABLE_BLOOM) {
+    scene.add(new THREE.AmbientLight(0x404040));
+  }
   //
 
   renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
   renderer.setPixelRatio(window.devicePixelRatio);
   renderer.setSize(window.innerWidth, window.innerHeight);
   renderer.xr.enabled = true;
+
+  // Bloom
+  if (ENABLE_BLOOM) {
+    renderer.outputColorSpace = THREE.LinearSRGBColorSpace;
+    renderer.toneMapping = THREE.ReinhardToneMapping;
+
+    renderScene = new RenderPass(scene, camera);
+
+    bloomPass = new UnrealBloomPass(new THREE.Vector2(window.innerWidth, window.innerHeight), 1.5, 0.4, 0.85);
+    bloomPass.threshold = params.bloomThreshold;
+    bloomPass.strength = params.bloomStrength;
+    bloomPass.radius = params.bloomRadius;
+
+    bloomComposer = new EffectComposer(renderer);
+    bloomComposer.renderToScreen = false;
+    bloomComposer.addPass(renderScene);
+    bloomComposer.addPass(bloomPass);
+
+
+    //bloomComposer.renderToScreen = false; // Scene with Glow
+
+    //renderer.toneMappingExposure = Math.pow(params.exposure, 4.0); // default
+
+
+    const finalPass = new ShaderPass(
+      new THREE.ShaderMaterial({
+        uniforms: {
+          baseTexture: { value: null },
+          bloomTexture: { value: bloomComposer.renderTarget2.texture }
+        },
+        vertexShader: passthroughVS,
+        fragmentShader: bloomFS,
+        defines: {}
+      }), 'baseTexture'
+    );
+    finalPass.needsSwap = true;
+
+    finalComposer = new EffectComposer(renderer);
+    finalComposer.addPass(renderScene);
+    finalComposer.addPass(finalPass);
+  }
+
   container.appendChild(renderer.domElement);
-
-
-
   //
 
   document.body.appendChild(ARButton.createButton(renderer, { requiredFeatures: ['hit-test'] }));
@@ -211,7 +294,9 @@ function init() {
 
         const clone = cloneModel(models.fire, tmpMatrix);
         clone.userData.lifespan = FIRE_MAX_LIFESPAN;
-
+        if (ENABLE_BLOOM) {
+          clone.layers.toggle(BLOOM_SCENE); // Bloom
+        }
         numFires++;
 
       } else {
@@ -280,6 +365,13 @@ function onWindowResize() {
   camera.updateProjectionMatrix();
 
   renderer.setSize(window.innerWidth, window.innerHeight);
+
+  if (ENABLE_BLOOM) {
+    bloomComposer.setSize(window.innerWidth, window.innerHeight);
+    finalComposer.setSize(window.innerWidth, window.innerHeight);
+  }
+
+  render();
 
 }
 
@@ -551,6 +643,15 @@ function render(timestamp, frame) {
   }
 
   animate();
+
+  if (ENABLE_BLOOM) {
+    camera.layers.set(BLOOM_SCENE);
+    bloomComposer.render();
+    camera.layers.set(ENTIRE_SCENE);
+
+    // render the entire scene, then render bloom scene on top
+    finalComposer.render();
+  }
 
   renderer.render(scene, camera);
 
