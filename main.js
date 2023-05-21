@@ -17,6 +17,9 @@ import { RoomEnvironment } from 'three/addons/environments/RoomEnvironment.js';
 
 import * as SkeletonUtils from 'three/addons/utils/SkeletonUtils.js';
 
+import { ExplosionController as explosionController } from './animation/explosionController.js';
+
+
 /**
   * Returns the query parameters as a key/value object. 
   * Example: If the query parameters are
@@ -124,6 +127,8 @@ function init() {
   renderer.setSize(window.innerWidth, window.innerHeight);
   renderer.xr.enabled = true;
   container.appendChild(renderer.domElement);
+
+
 
   //
 
