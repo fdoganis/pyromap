@@ -83,9 +83,9 @@ var FlareParticle = (function () {
         });
     }
 
-    FlareParticle.getObject3D = function () {
+    FlareParticle.prototype.getObject3D = function () {
         return this.particleSystem;
-    }
+    };
 
 
     FlareParticle.setController = function () {
@@ -113,6 +113,7 @@ var FlareParticle = (function () {
         this.geometry.attributes['size'].needsUpdate = true;
         this.geometry.attributes['position'].needsUpdate = true;
     };
+
     FlareParticle.prototype.spawnParticle = function () {
         for (var i = 0; i < this.particlesNumber; i++) {
             if (this.needsUpdate[i] == false) {
@@ -121,6 +122,7 @@ var FlareParticle = (function () {
             }
         }
     };
+
     FlareParticle.prototype.update = function (deltaTime) {
         this.spawnParticleTime += deltaTime;
         if (this.spawnParticleTime > this.spawnParticleInterval) {
