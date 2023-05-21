@@ -127,6 +127,11 @@ function init() {
   light.position.set(0.5, 1, 0.25);
   scene.add(light);
 
+
+  const dirLight = new THREE.DirectionalLight(0xffffff, 1.0);
+  dirLight.position.set(5, 10, 7.5);
+  scene.add(dirLight);
+
   //
 
   renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
