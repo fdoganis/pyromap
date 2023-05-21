@@ -57,6 +57,7 @@ const debug = query.debug === 'true';
 const showHelpers = query.showHelpers === 'true';
 //const showHelpers = 'true'; // TODO: FIXME
 const enableBloom = query.enableBloom === 'true'; // Bloom deactivated by default, needs fixing
+const spraySpeed = query.spraySpeed;
 
 
 let mixer = null;
@@ -100,6 +101,7 @@ const EXTINGUISHER_RANGE = 2.0;
 const EXTINGUISHER_MODEL_SCALE = 0.0015;
 
 const SPRAY_MODEL_SCALE = 0.026;
+const SPRAY_MODEL_SPEED = spraySpeed ? spraySpeed : 30;
 
 const MAX_FIRES = debug ? 1 : 5;
 //const MAX_FIRES = 1; // debug
@@ -263,7 +265,7 @@ function init() {
 
   simSettings.init(); // settings (color etc)
   simSettings.gui.domElement.style.display = 'none'; // hide the ui
-  simSettings.params.TimeScale = 50;
+  simSettings.params.TimeScale = SPRAY_MODEL_SPEED;
   simSettings.params.LightColor2 = '#dedede';
   simSettings.params.LightColor = '#ececec';
   simSettings.params.NormalColor = '#afafaf';
