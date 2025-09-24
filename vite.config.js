@@ -3,7 +3,7 @@ import { viteStaticCopy } from 'vite-plugin-static-copy';
 import glsl from 'vite-plugin-glsl';
 
 export default defineConfig({
-  base: "/pyromap",
+  base: "/pyromap/",
   clearScreen: false,
   esbuild: {
     supported: {
