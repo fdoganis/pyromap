@@ -3,9 +3,17 @@ import { viteStaticCopy } from 'vite-plugin-static-copy';
 import glsl from 'vite-plugin-glsl';
 
 export default defineConfig({
+  base: "/pyromap",
   clearScreen: false,
+  esbuild: {
+    supported: {
+      'top-level-await': true
+    }
+  }
+  ,
   server: {
-    open: true
+    open: true,
+    allowedHosts: ['.trycloudflare.com']
   },
   plugins: [
     viteStaticCopy({

@@ -475,7 +475,7 @@ function loadData() {
 
   const gltfLoader = new GLTFLoader(manager)
     .setDRACOLoader(dracoLoader)
-    .setPath('assets/models/');
+    .setPath('pyromap/assets/models/');
 
   for (const model of Object.values(models)) {
     gltfLoader.load(model.url, (gltf) => {
