@@ -11,6 +11,9 @@ export default defineConfig({
     }
   }
   ,
+  build: {
+    chunkSizeWarningLimit: 1024
+  },
   server: {
     open: true,
     allowedHosts: ['.trycloudflare.com']
